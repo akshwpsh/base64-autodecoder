@@ -1,8 +1,10 @@
 // ==UserScript==
 // @name            Base64 Auto Decoder
 // @name:ko         Base64 자동 디코더
-// @namespace       https://github.com/akshw/base64-autodecoder
+// @namespace       https://github.com/akshwpsh/base64-autodecoder
 // @version         1.0.0
+// @homepageURL     https://github.com/akshwpsh/base64-autodecoder
+// @supportURL      https://github.com/akshwpsh/base64-autodecoder/issues
 // @description     Finds base64 encoded text on any page and shows the decoded result under the paragraph, keeping the original intact.
 // @description:ko  어느 사이트에서든 base64로 인코딩된 내용을 찾아, 원문은 그대로 둔 채 해당 문단 아래에 디코딩 결과를 보여줍니다.
 // @author          akshw
