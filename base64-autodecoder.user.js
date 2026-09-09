@@ -2,7 +2,7 @@
 // @name            Base64 Auto Decoder
 // @name:ko         Base64 자동 디코더
 // @namespace       https://github.com/akshwpsh/base64-autodecoder
-// @version         1.0.0
+// @version         1.0.1
 // @homepageURL     https://github.com/akshwpsh/base64-autodecoder
 // @supportURL      https://github.com/akshwpsh/base64-autodecoder/issues
 // @description     Finds base64 encoded text on any page and shows the decoded result under the paragraph, keeping the original intact.
@@ -32,8 +32,9 @@
     COLLAPSE_LENGTH: 500,
     // 한 페이지에서 처리할 최대 발견 수. 무한 스크롤 방어선.
     MAX_FINDINGS_PER_PAGE: 200,
-    // 배지가 이 개수를 넘으면 휴리스틱 경로를 중단하고 알린다.
-    MAX_BADGES: 20,
+    // 「추정 결과도 바로 펼치기」가 켜져 있을 때 자동으로 펼칠 최대 개수.
+    // 넘치는 것은 버리지 않고 배지로 접어 둔다.
+    MAX_AUTO_HEURISTIC: 20,
     MUTATION_DEBOUNCE_MS: 200,
     // 유휴 시간 한 조각에서 처리할 세그먼트 수.
     CHUNK_SIZE: 30,
@@ -313,8 +314,8 @@
    * ------------------------------------------------------------------ */
 
   let findingCount = 0;
-  let badgeCount = 0;
-  let badgeCapNotified = false;
+  let autoHeuristicCount = 0;
+  let autoCapNotified = false;
   let halted = false;
 
   function scanSegment(seg) {
@@ -420,14 +421,22 @@
     const accepted = [];
     for (const finding of findings) {
       if (findingCount >= CONFIG.MAX_FINDINGS_PER_PAGE) break;
-      if (finding.kind === 'heuristic') {
-        if (badgeCount >= CONFIG.MAX_BADGES) { notifyBadgeCap(); continue; }
-        badgeCount++;
-      }
       findingCount++;
       accepted.push(finding);
     }
     return accepted;
+  }
+
+  // 휴리스틱 결과를 바로 펼칠지 결정한다. 상한을 넘으면 배지로 접는다.
+  function shouldAutoExpand(finding) {
+    if (finding.kind === 'anchored') return true;
+    if (!settings.autoExpandHeuristic) return false;
+    if (autoHeuristicCount >= CONFIG.MAX_AUTO_HEURISTIC) {
+      notifyAutoCap();
+      return false;
+    }
+    autoHeuristicCount++;
+    return true;
   }
 
   function processSegment(seg) {
@@ -468,7 +477,7 @@
         const spans = spansByFinding[order];
         if (!spans.length) return;
         const entry = { finding: finding, spans: spans };
-        if (finding.kind === 'anchored' || settings.autoExpandHeuristic) expanded.push(entry);
+        if (shouldAutoExpand(finding)) expanded.push(entry);
         else attachBadge(seg.owner, entry);
       });
 
@@ -805,11 +814,11 @@
     setTimeout(function () { withoutObserving(function () { host.remove(); }); }, 5000);
   }
 
-  function notifyBadgeCap() {
-    if (badgeCapNotified) return;
-    badgeCapNotified = true;
-    notify('추정 후보가 ' + CONFIG.MAX_BADGES + '개를 넘어 나머지는 표시하지 않습니다. '
-      + '메뉴에서 추정 탐지를 끌 수 있습니다.');
+  function notifyAutoCap() {
+    if (autoCapNotified) return;
+    autoCapNotified = true;
+    notify('추정 결과 ' + CONFIG.MAX_AUTO_HEURISTIC + '개를 자동으로 펼쳤습니다. '
+      + '나머지는 🔓 배지로 표시하니 눌러서 보세요.');
   }
 
   /* ------------------------------------------------------------------ *
