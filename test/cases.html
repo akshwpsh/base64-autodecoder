@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>base64 자동 디코더 - 케이스 페이지</title>
+<style>
+  body { font: 15px/1.7 -apple-system, "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+         max-width: 860px; margin: 0 auto; padding: 24px 16px 120px; color: #1f2328; }
+  h1 { font-size: 22px; }
+  section { border-top: 1px solid #e3e6ea; padding: 18px 0; }
+  h2 { font-size: 15px; margin: 0 0 4px; }
+  .expect { font-size: 12px; color: #6b7280; margin: 0 0 10px; }
+  .expect b { color: #0969da; }
+  .expect.no b { color: #b42318; }
+  code, pre { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  pre { background: #f6f8fa; border: 1px solid #e3e6ea; border-radius: 6px;
+        padding: 10px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  .dark { background: #14181f; color: #e6edf3; padding: 14px; border-radius: 8px; }
+  .dark a { color: #79c0ff; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { border: 1px solid #e3e6ea; padding: 6px 8px; text-align: left; word-break: break-all; }
+  .tok { word-break: break-all; }
+  button { font: inherit; padding: 4px 10px; border: 1px solid #d5dae0;
+           border-radius: 6px; background: #fff; cursor: pointer; }
+  [contenteditable] { border: 1px dashed #b42318; padding: 8px; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<h1>base64 자동 디코더 — 케이스 페이지</h1>
+<p class="expect">각 절의 <b>기대</b>가 실제 동작과 맞는지 눈으로 확인합니다.
+「자동」은 디코딩 블록이 바로 펼쳐져야 함을, 「없음」은 아무 일도 일어나지 않아야 함을 뜻합니다.</p>
+
+<!-- ================= 앵커 경로 ================= -->
+
+<section>
+  <h2>1. 앵커 · 단순 링크</h2>
+  <p class="expect">기대: <b>자동</b> — example.com 링크, 호스트명 굵게</p>
+  <p class="tok">아래 주소를 확인하세요 aHR0cHM6Ly9leGFtcGxlLmNvbS9oZWxsby13b3JsZD9xPTE= 감사합니다</p>
+</section>
+
+<section>
+  <h2>2. 앵커 · 2중 중첩</h2>
+  <p class="expect">기대: <b>자동</b> — 두 번 풀어 nested-twice 링크</p>
+  <p class="tok">YUhSMGNITTZMeTlsZUdGdGNHeGxMbU52YlM5dVpYTjBaV1F0ZEhkcFkyVT0=</p>
+</section>
+
+<section>
+  <h2>3. 앵커 · 3중 중첩 (최대 깊이)</h2>
+  <p class="expect">기대: <b>자동</b> — 세 번 풀어 nested-three 링크</p>
+  <p class="tok">WVVoU01HTklUVFpNZVRsc1pVZEdkR05IZUd4TWJVNTJZbE01ZFZwWVRqQmFWMUYwWkVkb2VWcFhWVDA9</p>
+</section>
+
+<section>
+  <h2>4. 앵커 · URL 이 문장 중간에 있는 경우</h2>
+  <p class="expect">기대: <b>자동</b> — 접두사 앵커링 방식이 실패하는 케이스.
+     인코딩된 평문이 한글로 시작해 3바이트 정렬이 어긋난다.</p>
+  <p class="tok">7LC46rOgIOunge2BrDogaHR0cHM6Ly9leGFtcGxlLmNvbS9vZmZzZXQtc2hpZnRlZCDtmZXsnbgg67CU656N64uI64uk</p>
+</section>
+
+<section>
+  <h2>5. 앵커 · magnet 링크</h2>
+  <p class="expect">기대: <b>자동</b> — magnet: 링크. 호스트가 없어 굵게 강조는 생략된다.</p>
+  <p class="tok">bWFnbmV0Oj94dD11cm46YnRpaDowMTIzNDU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3JmRuPXNhbXBsZQ==</p>
+</section>
+
+<section>
+  <h2>6. 앵커 · URL-safe 변종 + 패딩 없음</h2>
+  <p class="expect">기대: <b>자동</b> — <code>-</code>/<code>_</code> 정규화와 패딩 보정이 동작해야 한다.</p>
+  <p class="tok">aHR0cHM6Ly9leGFtcGxlLmNvbS91cmwtc2FmZT9hPTEmYj0y</p>
+</section>
+
+<!-- ================= 휴리스틱 경로 ================= -->
+
+<section>
+  <h2>7. 휴리스틱 · 한글 평문</h2>
+  <p class="expect">기대: <b>배지</b> — 링크가 아니므로 바로 펼치지 않는다. 원문에 밑줄과 🔓 가 붙고,
+     🔓 를 누르면 「추정」 태그가 달린 블록이 펼쳐진다. 다시 누르면 접힌다.</p>
+  <p class="tok">7JWI64WV7ZWY7IS47JqULiDsnbTqsoPsnYAgYmFzZTY066GcIOyduOy9lOuUqeuQnCDtj4nrrLgg66y464uo7J6F64uI64ukLiDrp4HtgazqsIAg7JWE64uZ64uI64ukLg==</p>
+</section>
+
+<section>
+  <h2>8. 휴리스틱 · 영문 평문</h2>
+  <p class="expect">기대: <b>배지</b></p>
+  <p class="tok">VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZywgcmVwZWF0ZWRseS4=</p>
+</section>
+
+<section>
+  <h2>8-1. 휴리스틱 · 공백만 디코딩되는 토큰</h2>
+  <p class="expect no">기대: <b>없음</b> — 공백 12개로 풀리는 문자열. 보여줄 것이 없으니 잡히면 안 된다.</p>
+  <p class="tok">ICAgICAgICAgICAg</p>
+</section>
+
+<!-- ================= 쪼개진 토큰 ================= -->
+
+<section>
+  <h2>9. 토큰이 &lt;wbr&gt; 로 쪼개진 경우</h2>
+  <p class="expect">기대: <b>자동</b> — 인접 텍스트 노드를 이어붙여야만 잡힌다.</p>
+  <p class="tok">aHR0cHM6Ly9leGFt<wbr>cGxlLmNvbS9oZWxsby13b3JsZD9xPTE=</p>
+</section>
+
+<section>
+  <h2>10. 토큰이 문법 강조 &lt;span&gt; 으로 쪼개진 경우</h2>
+  <p class="expect">기대: <b>자동</b> — 코드 하이라이터가 만든 구조를 흉내낸 것.</p>
+  <pre><code><span style="color:#0550ae">aHR0cHM6</span><span style="color:#8250df">Ly9leGFt</span><span style="color:#0a3069">cGxlLmNvbS9maXJzdC1vZi10d28=</span></code></pre>
+</section>
+
+<section>
+  <h2>11. 토큰이 &lt;mark&gt; 로 쪼개진 경우 (검색어 하이라이트)</h2>
+  <p class="expect">기대: <b>자동</b></p>
+  <p class="tok">aHR0cHM6Ly9le<mark>GFtcGxl</mark>LmNvbS9zZWNvbmQtb2YtdHdv</p>
+</section>
+
+<section>
+  <h2>12. 개행이 낀 토큰 (MIME 스타일 줄바꿈)</h2>
+  <p class="expect">기대: <b>자동</b> — 공백을 넘는 매칭이라 앵커 경로만 허용된다.</p>
+  <pre>aHR0cHM6Ly9leGFtcGxl
+LmNvbS9oZWxsby13b3JsZD9xPTE=</pre>
+</section>
+
+<section>
+  <h2>13. 공백이 낀 토큰</h2>
+  <p class="expect">기대: <b>자동</b></p>
+  <p class="tok">aHR0cHM6Ly9leGFtcGxl LmNvbS91cmwtc2FmZT9hPTEmYj0y</p>
+</section>
+
+<section>
+  <h2>13-1. &lt;br&gt; 로 나뉜 서로 다른 두 토큰</h2>
+  <p class="expect">기대: <b>자동</b> — 링크 <em>두 개</em>(url-safe, second-of-two)로 따로 풀려야 한다.
+     하나로 합쳐져 엉뚱한 주소가 되면 실패.</p>
+  <p class="tok">aHR0cHM6Ly9leGFtcGxlLmNvbS91cmwtc2FmZT9hPTEmYj0y<br>aHR0cHM6Ly9leGFtcGxlLmNvbS9zZWNvbmQtb2YtdHdv</p>
+</section>
+
+<section>
+  <h2>13-2. 패딩 바로 뒤에 글자가 붙은 경우</h2>
+  <p class="expect">기대: <b>자동</b> — <code>=</code> 에서 토큰이 끊겨 hello-world 링크가 잡혀야 한다.</p>
+  <p class="tok">aHR0cHM6Ly9leGFtcGxlLmNvbS9oZWxsby13b3JsZD9xPTE=끝</p>
+</section>
+
+<!-- ================= 배치와 표시 ================= -->
+
+<section>
+  <h2>14. 한 문단에 토큰 두 개</h2>
+  <p class="expect">기대: <b>자동</b> — 블록 하나에 ①② 번호가 붙고, 원문에도 같은 번호가 달린다.
+     호버하면 서로 하이라이트된다.</p>
+  <p class="tok">첫 번째는 aHR0cHM6Ly9leGFtcGxlLmNvbS9maXJzdC1vZi10d28= 이고,
+     두 번째는 aHR0cHM6Ly9leGFtcGxlLmNvbS9zZWNvbmQtb2YtdHdv 입니다.</p>
+</section>
+
+<section>
+  <h2>15. 긴 결과 (500자 초과)</h2>
+  <p class="expect">기대: <b>자동</b> — 접힌 상태로 표시되고 「더 보기」와 「복사」 버튼이 있어야 한다.</p>
+  <p class="tok">6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g6ri0IOqysOqzvCDthYzsiqTtirguIOq4tCDqsrDqs7wg7YWM7Iqk7Yq4LiDquLQg6rKw6rO8IO2FjOyKpO2KuC4g</p>
+</section>
+
+<section>
+  <h2>16. 어두운 배경</h2>
+  <p class="expect">기대: <b>자동</b> — 디코딩 블록이 어두운 팔레트로 그려져야 한다.</p>
+  <div class="dark">
+    <p class="tok">aHR0cHM6Ly9leGFtcGxlLmNvbS9oZWxsby13b3JsZD9xPTE=</p>
+  </div>
+</section>
+
+<section>
+  <h2>17. 표 안 (기준점을 뒤에 붙일 수 없는 경우)</h2>
+  <p class="expect">기대: <b>자동</b> — 블록이 셀 <em>안쪽</em>에 들어가 표가 깨지지 않아야 한다.</p>
+  <table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>링크</td><td>aHR0cHM6Ly9leGFtcGxlLmNvbS9maXJzdC1vZi10d28=</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>18. 목록 안</h2>
+  <p class="expect">기대: <b>자동</b> — 블록이 &lt;li&gt; 안쪽에 들어간다.</p>
+  <ul>
+    <li>첫 항목 aHR0cHM6Ly9leGFtcGxlLmNvbS9zZWNvbmQtb2YtdHdv</li>
+  </ul>
+</section>
+
+<section>
+  <h2>18-1. 접힌 &lt;details&gt; 안 (스포일러)</h2>
+  <p class="expect">기대: 접힌 상태에서는 <b>아무것도 안 보이고</b>, 「보기」를 열면 블록이 <em>안쪽</em>에 있어야 한다.
+     블록이 상자 밖으로 새어 나오면 실패.</p>
+  <details>
+    <summary>보기</summary>
+    aHR0cHM6Ly9leGFtcGxlLmNvbS9oZWxsby13b3JsZD9xPTE=
+  </details>
+</section>
+
+<!-- ================= 오탐 유발 ================= -->
+
+<section>
+  <h2>19. 오탐 유발 · SHA-256 해시</h2>
+  <p class="expect no">기대: <b>없음</b></p>
+  <p class="tok">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</p>
+</section>
+
+<section>
+  <h2>20. 오탐 유발 · UUID</h2>
+  <p class="expect no">기대: <b>없음</b></p>
+  <p class="tok">f47ac10b-58cc-4372-a567-0e02b2c3d479</p>
+</section>
+
+<section>
+  <h2>21. 오탐 유발 · JWT (서명 부분)</h2>
+  <p class="expect no">기대: 헤더/페이로드는 JSON 이라 <b>추정</b>으로 잡힐 수 있으나,
+     서명 부분은 <b>없음</b>이어야 한다.</p>
+  <p class="tok">SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</p>
+</section>
+
+<section>
+  <h2>22. 오탐 유발 · 세션 토큰 / 무작위 문자열</h2>
+  <p class="expect no">기대: <b>없음</b></p>
+  <p class="tok">sk9Xq2LmPvR7TzYw4NbHcEjA6UdF1KgS8MoIpQrVtXyZ</p>
+</section>
+
+<section>
+  <h2>23. 오탐 유발 · 공백 제거 시 이어붙는 영문 문장</h2>
+  <p class="expect no">기대: <b>없음</b> — 공백을 넘는 매칭은 앵커 경로만 허용하므로 걸리지 않아야 한다.</p>
+  <p class="tok">Consider therefore whatever unusual circumstances surrounded them entirely</p>
+</section>
+
+<section>
+  <h2>24. 오탐 유발 · CSS 클래스명 같은 짧은 조각</h2>
+  <p class="expect no">기대: <b>없음</b> — 16자 미만</p>
+  <p class="tok">Zm9v YmFy YmF6 cXV4</p>
+</section>
+
+<!-- ================= 건드리면 안 되는 곳 ================= -->
+
+<section>
+  <h2>25. textarea 안</h2>
+  <p class="expect no">기대: <b>없음</b> — 사용자가 편집 중인 내용은 건드리지 않는다.</p>
+  <textarea rows="2" cols="60">aHR0cHM6Ly9leGFtcGxlLmNvbS9oZWxsby13b3JsZD9xPTE=</textarea>
+</section>
+
+<section>
+  <h2>26. contenteditable 안</h2>
+  <p class="expect no">기대: <b>없음</b></p>
+  <div contenteditable="true">aHR0cHM6Ly9leGFtcGxlLmNvbS9maXJzdC1vZi10d28=</div>
+</section>
+
+<section>
+  <h2>26-1. 인라인 SVG 안의 글자</h2>
+  <p class="expect no">기대: <b>없음</b> — SVG 라벨은 그대로 보여야 한다. 라벨이 사라지면 실패.</p>
+  <svg width="420" height="40" role="img" aria-label="svg 라벨">
+    <text x="4" y="24" font-size="13">aHR0cHM6Ly9leGFtcGxlLmNvbS9oZWxsby13b3JsZD9xPTE=</text>
+  </svg>
+</section>
+
+<section>
+  <h2>27. data: URI</h2>
+  <p class="expect no">기대: 이미지가 정상 표시되고, <b>없음</b>.</p>
+  <img alt="빨간 점"
+       src="data:image/gif;base64,R0lGODlhAQABAIAAAP8AAAAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==">
+</section>
+
+<!-- ================= 동적 삽입 ================= -->
+
+<section>
+  <h2>28. 로드 후 동적으로 추가되는 내용</h2>
+  <p class="expect">기대: 버튼을 누르면 약 0.2초 뒤 <b>자동</b>으로 디코딩된다.</p>
+  <button id="add">문단 추가</button>
+  <div id="sink"></div>
+</section>
+
+<section>
+  <h2>29. 드래그 수동 디코딩</h2>
+  <p class="expect">기대: 아래 문자열을 드래그하면 <b>자동</b>으로 블록이 나타난다.
+     16자 미만이라 자동 스캔에는 걸리지 않는 케이스.</p>
+  <p class="tok">7JWI64WV</p>
+</section>
+
+<script>
+  document.getElementById('add').addEventListener('click', function () {
+    var p = document.createElement('p');
+    p.className = 'tok';
+    p.textContent = '나중에 추가된 문단 aHR0cHM6Ly9leGFtcGxlLmNvbS9hZGRlZC1hZnRlci1sb2Fk 입니다.';
+    document.getElementById('sink').appendChild(p);
+  });
+</script>
+
+</body>
+</html>
