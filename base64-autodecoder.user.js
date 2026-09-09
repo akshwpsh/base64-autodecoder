@@ -77,7 +77,7 @@
    * ------------------------------------------------------------------ */
 
   const STORE_KEY = 'b64ad.settings';
-  const DEFAULTS = { heuristicEnabled: true, blacklist: [] };
+  const DEFAULTS = { heuristicEnabled: true, autoExpandHeuristic: false, blacklist: [] };
 
   const store = {
     read() {
@@ -94,6 +94,7 @@
       const s = Object.assign({}, DEFAULTS, parsed);
       if (!Array.isArray(s.blacklist)) s.blacklist = [];
       s.heuristicEnabled = s.heuristicEnabled !== false;
+      s.autoExpandHeuristic = s.autoExpandHeuristic === true;
       return s;
     },
     write(value) {
@@ -458,16 +459,18 @@
         if (span) spansByFinding[item.order].unshift(span);
       }
 
-      const anchored = [];
+      // 앵커 경로는 항상 바로 펼친다. 휴리스틱 경로는 기본적으로 배지만 달지만,
+      // 사용자가 원하면 같이 펼친다.
+      const expanded = [];
       findings.forEach(function (finding, order) {
         const spans = spansByFinding[order];
         if (!spans.length) return;
         const entry = { finding: finding, spans: spans };
-        if (finding.kind === 'anchored') anchored.push(entry);
+        if (finding.kind === 'anchored' || settings.autoExpandHeuristic) expanded.push(entry);
         else attachBadge(seg.owner, entry);
       });
 
-      if (anchored.length) buildBlock(seg.owner, anchored);
+      if (expanded.length) buildBlock(seg.owner, expanded);
     });
 
     if (findingCount >= CONFIG.MAX_FINDINGS_PER_PAGE) halt();
@@ -945,6 +948,16 @@
     );
 
     GM_registerMenuCommand(
+      (settings.autoExpandHeuristic ? '☑' : '☐') + ' 추정 결과도 바로 펼치기 (배지 대신)',
+      function () {
+        settings.autoExpandHeuristic = !settings.autoExpandHeuristic;
+        store.write(settings);
+        notify('추정 결과를 ' + (settings.autoExpandHeuristic ? '바로 펼칩니다' : '배지로만 표시합니다')
+          + '. 새로고침하면 적용됩니다.');
+      }
+    );
+
+    GM_registerMenuCommand(
       blocked ? '▶ 이 사이트에서 켜기 (' + host + ')' : '⏸ 이 사이트에서 끄기 (' + host + ')',
       function () {
         const at = settings.blacklist.indexOf(host);
@@ -971,6 +984,7 @@
     GM_registerMenuCommand('↺ 기본값으로 되돌리기', function () {
       if (!window.confirm('모든 설정을 기본값으로 되돌릴까요?')) return;
       settings.heuristicEnabled = DEFAULTS.heuristicEnabled;
+      settings.autoExpandHeuristic = DEFAULTS.autoExpandHeuristic;
       settings.blacklist = [];
       store.write(settings);
       location.reload();
