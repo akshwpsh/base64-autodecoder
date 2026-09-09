@@ -2,7 +2,7 @@
 // @name            Base64 Auto Decoder
 // @name:ko         Base64 자동 디코더
 // @namespace       https://github.com/akshwpsh/base64-autodecoder
-// @version         1.0.2
+// @version         1.0.3
 // @homepageURL     https://github.com/akshwpsh/base64-autodecoder
 // @supportURL      https://github.com/akshwpsh/base64-autodecoder/issues
 // @updateURL       https://github.com/akshwpsh/base64-autodecoder/raw/master/base64-autodecoder.user.js
@@ -34,9 +34,6 @@
     COLLAPSE_LENGTH: 500,
     // 한 페이지에서 처리할 최대 발견 수. 무한 스크롤 방어선.
     MAX_FINDINGS_PER_PAGE: 200,
-    // 「추정 결과도 바로 펼치기」가 켜져 있을 때 자동으로 펼칠 최대 개수.
-    // 넘치는 것은 버리지 않고 배지로 접어 둔다.
-    MAX_AUTO_HEURISTIC: 20,
     MUTATION_DEBOUNCE_MS: 200,
     // 유휴 시간 한 조각에서 처리할 세그먼트 수.
     CHUNK_SIZE: 30,
@@ -316,8 +313,6 @@
    * ------------------------------------------------------------------ */
 
   let findingCount = 0;
-  let autoHeuristicCount = 0;
-  let autoCapNotified = false;
   let halted = false;
 
   function scanSegment(seg) {
@@ -429,16 +424,10 @@
     return accepted;
   }
 
-  // 휴리스틱 결과를 바로 펼칠지 결정한다. 상한을 넘으면 배지로 접는다.
+  // 앵커 경로는 항상 펼친다. 휴리스틱 경로는 사용자가 켰을 때만 펼친다.
+  // 페이지 전체 상한(MAX_FINDINGS_PER_PAGE)이 폭주를 막는다.
   function shouldAutoExpand(finding) {
-    if (finding.kind === 'anchored') return true;
-    if (!settings.autoExpandHeuristic) return false;
-    if (autoHeuristicCount >= CONFIG.MAX_AUTO_HEURISTIC) {
-      notifyAutoCap();
-      return false;
-    }
-    autoHeuristicCount++;
-    return true;
+    return finding.kind === 'anchored' || settings.autoExpandHeuristic;
   }
 
   function processSegment(seg) {
@@ -814,13 +803,6 @@
     shadow.appendChild(box);
     withoutObserving(function () { document.body.appendChild(host); });
     setTimeout(function () { withoutObserving(function () { host.remove(); }); }, 5000);
-  }
-
-  function notifyAutoCap() {
-    if (autoCapNotified) return;
-    autoCapNotified = true;
-    notify('추정 결과 ' + CONFIG.MAX_AUTO_HEURISTIC + '개를 자동으로 펼쳤습니다. '
-      + '나머지는 🔓 배지로 표시하니 눌러서 보세요.');
   }
 
   /* ------------------------------------------------------------------ *
